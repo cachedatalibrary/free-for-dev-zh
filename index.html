@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Free for Zh - 开发者免费资源</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#f9fafb}
+.sidebar{transition:transform .3s}
+@media(max-width:768px){.sidebar{transform:translateX(-100%);position:fixed;z-index:50;height:100vh}.sidebar.open{transform:translateX(0)}}
+.item:hover{background:#f3f4f6}
+.active-lang{background:#3b82f6;color:#fff}
+</style>
+</head>
+<body class="text-gray-800">
+<header class="bg-white shadow-sm sticky top-0 z-40">
+<div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<button id="menuBtn" class="md:hidden text-xl"><i class="fas fa-bars"></i></button>
+<h1 class="text-xl font-bold text-blue-600">Free for <span class="text-gray-800">Zh</span></h1>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative hidden md:block">
+<input id="search" type="text" placeholder="搜索..." class="pl-8 pr-3 py-1 border rounded text-sm w-48 focus:w-64 transition-all outline-none focus:ring-2 focus:ring-blue-400">
+<i class="fas fa-search absolute left-2 top-2 text-gray-400 text-sm"></i>
+</div>
+<button onclick="setLang('zh')" id="btnZh" class="px-3 py-1 text-xs rounded border active-lang">中文</button>
+<button onclick="setLang('en')" id="btnEn" class="px-3 py-1 text-xs rounded border">EN</button>
+</div>
+</div>
+<div class="md:hidden px-4 pb-3">
+<input id="searchM" type="text" placeholder="搜索..." class="w-full pl-8 pr-3 py-2 border rounded text-sm outline-none focus:ring-2 focus:ring-blue-400 relative">
+</div>
+</header>
+<div class="max-w-7xl mx-auto flex">
+<nav id="sidebar" class="sidebar w-64 bg-white shadow-md md:shadow-none md:sticky md:top-16 md:h-screen md:overflow-y-auto p-4 border-r hidden md:block">
+<div class="flex justify-between items-center md:hidden mb-4">
+<h2 class="font-bold">目录</h2>
+<button onclick="toggleMenu()"><i class="fas fa-times"></i></button>
+</div>
+<ul id="toc" class="space-y-1 text-sm"></ul>
+</nav>
+<main class="flex-1 p-4 md:p-6" id="main"></main>
+</div>
+<footer class="bg-gray-800 text-white py-8 mt-12">
+<div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-sm text-gray-400">© 2024 Free for Zh. Inspired by free-for.dev</p>
+<a href="https://github.com/cachedatalibrary" target="_blank" class="text-2xl hover:text-blue-400 transition"><i class="fab fa-github"></i></a>
+</div>
+</footer>
+<script>
+let L='zh',D=[
+["cloud","主要云服务商","Major Cloud Providers",[
+["GCP","https://cloud.google.com/free","App Engine 28h/天, Firestore 1GB, 计算引擎 e2-micro, 云存储 5GB","App Engine 28h/day, Firestore 1GB, Compute e2-micro, Storage 5GB"],
+["AWS","https://aws.amazon.com/free","CloudFront 1TB, Lambda 100万次, DynamoDB 25GB, SES 3000条","CloudFront 1TB, Lambda 1M, DynamoDB 25GB, SES 3000 msgs"],
+["Azure","https://azure.microsoft.com/free","应用服务 10个, Functions 100万次, Cosmos DB 25GB, 静态应用","App Service 10, Functions 1M, Cosmos DB 25GB, Static Apps"],
+["Oracle","https://www.oracle.com/cloud/free","2台AMD VM, 4核ARM 24GB, 200GB块存储, 10GB对象存储, 10TB出口","2 AMD VM, 4 ARM cores 24GB, 200GB block, 10GB object, 10TB egress"],
+["IBM","https://www.ibm.com/cloud/free","Cloudant 1GB, Db2 100MB, API Connect 5万次, 日志分析 500MB","Cloudant 1GB, Db2 100MB, API Connect 50k, Log Analytics 500MB"]
+]],
+["cloud-mgmt","云管理","Cloud Management",[
+["Brainboard","https://brainboard.co","可视化云基础设施构建","Visual cloud infrastructure builder"],
+["Cloud 66","https://www.cloud66.com","全云构建部署，个人免费","Build & deploy anywhere, free for personal"],
+["Pulumi","https://www.pulumi.com","基础设施即代码，使用熟悉语言","IaC using familiar languages"],
+["Scalr","https://scalr.com","Terraform自动化，每月50次免费","Terraform automation, 50 runs/mo free"]
+]],
+["analytics","分析与统计","Analytics & Stats",[
+["Amplitude","https://amplitude.com","每月100万事件，2个应用","1M events/mo, 2 apps"],
+["PostHog","https://posthog.com","每月100万事件，产品分析套件","1M events/mo, full product analytics"],
+["Mixpanel","https://mixpanel.com","每月10万用户，无限历史","100k users/mo, unlimited history"],
+["Hotjar","https://hotjar.com","每天2000 PV，热力图与反馈","2k PV/day, heatmaps & feedback"],
+["Plausible","https://plausible.io","隐私优先，开源，轻量","Privacy-first, open-source, lightweight"],
+["Umami","https://umami.is","简单隐私的开源GA替代","Simple privacy-friendly open-source GA alt"]
+]],
+["api","API与数据","API, Data & ML",[
+["Abstract API","https://www.abstractapi.com","IP地理定位，邮箱验证等API套件","IP geolocation, email validation API suite"],
+["RapidAPI","https://rapidapi.com","全球最大API市场，众多免费层级","World's largest API hub, many free tiers"],
+["OpenWeatherMap","https://openweathermap.org/api","免费天气API，60次/分","Free weather API, 60 calls/min"],
+["ExchangeRate-API","https://www.exchangerate-api.com","免费汇率API，1500次/月","Free exchange rates API, 1.5k req/mo"],
+["IPinfo","https://ipinfo.io","快速准确的IP数据，5万次/月","Fast accurate IP data, 50k/mo"],
+["JSONPlaceholder","https://jsonplaceholder.typicode.com","免费假REST API用于测试","Free fake REST API for testing"]
+]],
+["artifact","制品仓库","Artifact Repositories",[
+["Gemfury","https://gemfury.com","Maven, PyPi, NPM等私有公共仓库","Maven, PyPi, NPM private/public repos"],
+["Jitpack","https://jitpack.io","GitHub JVM/Android项目的Maven仓库","Maven repo for GitHub JVM/Android projects"],
+["RepoFlow","https://repoflow.io","支持npm, PyPI, Docker等","Supports npm, PyPI, Docker, etc"]
+]],
+["baas","BaaS","BaaS",[
+["Supabase","https://supabase.com","开源Firebase替代，PostgreSQL+Auth","Open source Firebase alt, Postgres+Auth"],
+["Firebase","https://firebase.google.com","Google移动/Web开发平台","Google mobile/web dev platform"],
+["Backendless","https://backendless.com","移动/Web BaaS，1GB存储","Mobile/Web BaaS, 1GB storage"],
+["Appwrite","https://appwrite.io","开源后端服务器，无限项目","Open source backend, unlimited projects"],
+["Convex","https://convex.dev","反应式后端，100万条记录免费","Reactive backend, 1M records free"]
+]],
+["lowcode","低代码","Low-code",[
+["Appsmith","https://www.appsmith.com","构建管理面板和内部工具","Build admin panels & internal tools"],
+["Budibase","https://budibase.com","开源低代码，几分钟创建内部应用","Open source low-code, build internal apps in mins"],
+["ToolJet","https://tooljet.com","连接数据库构建业务应用","Connect DBs to build business apps"],
+["ReTool","https://retool.com","构建内部应用，5用户免费","Build internal apps, 5 users free"]
+]],
+["cdn","CDN与保护","CDN & Protection",[
+["Cloudflare","https://www.cloudflare.com","免费CDN, DNS, DDoS防护, SSL","Free CDN, DNS, DDoS protection, SSL"],
+["Fastly","https://www.fastly.com","免费CDN，含$50/月额度","Free CDN with $50/mo credit"],
+["Bunny CDN","https://bunny.net","免费CDN，含$1/月额度","Free CDN with $1/mo credit"],
+["jsDelivr","https://www.jsdelivr.com","免费开源CDN，支持npm/GitHub","Free open-source CDN for npm/GitHub"]
+]],
+["cicd","CI/CD","CI/CD",[
+["GitHub Actions","https://github.com/features/actions","公共仓库无限，私有2000分钟/月","Unlimited for public, 2k mins/mo private"],
+["GitLab CI","https://about.gitlab.com/stages-devops-lifecycle/continuous-integration","400分钟/月","400 mins/mo"],
+["CircleCI","https://circleci.com","6000分钟/月","6k mins/mo"],
+["Travis CI","https://www.travis-ci.com","公共仓库免费，私有1000分钟/月","Free for public, 1k mins/mo private"],
+["Bitrise","https://www.bitrise.io","移动应用CI/CD，每月200次构建","Mobile CI/CD, 200 builds/mo"]
+]],
+["cms","CMS","CMS",[
+["Strapi","https://strapi.io","开源无头CMS","Open source headless CMS"],
+["Sanity","https://www.sanity.io","结构化内容平台，50万API请求","Structured content, 500k API reqs"],
+["Contentful","https://www.contentful.com","无头CMS，5用户免费","Headless CMS, 5 users free"],
+["Storyblok","https://www.storyblok.com","无头CMS，250GB流量","Headless CMS, 250GB traffic"]
+]],
+["codegen","代码生成","Code Generation",[
+["v0.dev","https://v0.dev","Vercel出品，生成React代码","By Vercel, generates React code"],
+["Supermaven","https://supermaven.com","高速AI代码补全","High-speed AI code completion"],
+["DhiWise","https://www.dhiwise.com","Figma转Flutter/React代码","Figma to Flutter/React code"]
+]],
+["codequal","代码质量","Code Quality",[
+["SonarCloud","https://sonarcloud.io","开源项目自动代码分析","Auto code analysis for open source"],
+["Codacy","https://www.codacy.com","自动代码审查，公共/私有仓库免费","Auto code review, free for public/private"],
+["CodeFactor","https://www.codefactor.io","自动化代码审查，1个私有仓库","Automated code review, 1 private repo"],
+["Codecov","https://codecov.io","代码覆盖率，开源免费","Code coverage, free for open source"]
+]],
+["codesearch","代码搜索","Code Search",[
+["Sourcegraph","https://sourcegraph.com","代码搜索与浏览","Code search & browsing"],
+["libraries.io","https://libraries.io","包管理器搜索与依赖更新","Package manager search & dependency updates"]
+]],
+["crash","崩溃处理","Crash Handling",[
+["Sentry","https://sentry.io","错误追踪，5000错误/月","Error tracking, 5k errors/mo"],
+["Rollbar","https://rollbar.com","异常监控，5000错误/月","Exception monitoring, 5k errors/mo"],
+["Bugsnag","https://www.bugsnag.com","稳定性监控，免费套餐","Stability monitoring, free tier"]
+]],
+["maps","地图可视化","Map Data Viz",[
+["Mapbox","https://www.mapbox.com","地图与地理空间SDK","Maps & geospatial SDKs"],
+["Leaflet","https://leafletjs.com","开源交互式地图","Open-source interactive maps"],
+["Geoapify","https://www.geoapify.com","地图瓦片，地理编码，3000次/天","Map tiles, geocoding, 3k req/day"]
+]],
+["mds","托管数据","Managed Data",[
+["Neon","https://neon.tech","Serverless PostgreSQL，0.5GB","Serverless Postgres, 0.5GB"],
+["PlanetScale","https://planetscale.com","Serverless MySQL，5GB","Serverless MySQL, 5GB"],
+["MongoDB Atlas","https://www.mongodb.com/cloud/atlas","免费MongoDB集群，512MB","Free MongoDB cluster, 512MB"],
+["Upstash","https://upstash.com","Serverless Redis/Kafka，10k命令/天","Serverless Redis/Kafka, 10k cmds/day"],
+["Turso","https://turso.tech","边缘SQLite数据库，9GB","Edge SQLite DB, 9GB"]
+]],
+["design","设计与UI","Design & UI",[
+["Figma","https://www.figma.com","协作界面设计，个人免费","Collaborative UI design, free for individuals"],
+["Canva","https://www.canva.com","在线设计工具，数千模板","Online design tool, thousands of templates"],
+["Unsplash","https://unsplash.com","免费高质量图片","Free high-quality photos"],
+["Heroicons","https://heroicons.com","Tailwind团队SVG图标","SVG icons by Tailwind team"],
+["Font Awesome","https://fontawesome.com","免费图标库，2000+图标","Free icon library, 2k+ icons"]
+]],
+["blog","开发博客","Dev Blogging",[
+["Dev.to","https://dev.to","开发者社区博客","Developer community blog"],
+["Hashnode","https://hashnode.com","开发者博客平台","Developer blogging platform"],
+["BearBlog","https://bearblog.dev","极简Markdown博客","Minimalist Markdown blog"]
+]],
+["dns","DNS","DNS",[
+["Cloudflare DNS","https://www.cloudflare.com/dns","免费DNS托管","Free DNS hosting"],
+["DuckDNS","https://www.duckdns.org","免费DDNS，5个域名","Free DDNS, 5 domains"],
+["No-IP","https://www.noip.com","动态DNS，3个主机名","Dynamic DNS, 3 hostnames"]
+]],
+["docker","Docker","Docker",[
+["Docker Hub","https://hub.docker.com","1个私有仓库，无限公共","1 private repo, unlimited public"],
+["Quay.io","https://quay.io","无限公共仓库","Unlimited public repos"]
+]],
+["domain","域名","Domains",[
+["Freenom","http://www.freenom.com","免费顶级域名(需续费)","Free TLDs (requires renewal)"],
+["Eu.org","https://nic.eu.org","免费eu.org子域名","Free eu.org subdomains"]
+]],
+["edu","教育","Education",[
+["freeCodeCamp","https://www.freecodecamp.org","免费编程课程与认证","Free coding courses & certifications"],
+["Codecademy","https://www.codecademy.com","交互式编程学习","Interactive coding learning"],
+["Khan Academy","https://www.khanacademy.org","免费基础与高级编程","Free basic & advanced computing"]
+]],
+["email","电子邮件","Email",[
+["SendGrid","https://sendgrid.com","每天100封免费","100 emails/day free"],
+["Mailgun","https://www.mailgun.com","前3个月5000封/月","5k emails/mo for first 3 months"],
+["Resend","https://resend.com","每天100封，3000封/月","100/day, 3k/mo"],
+["Brevo","https://www.brevo.com","每天300封免费","300 emails/day free"],
+["Mailchimp","https://mailchimp.com","500联系人，1000封/月","500 contacts, 1k emails/mo"]
+]],
+["feature","功能切换","Feature Toggles",[
+["GrowthBook","https://growthbook.io","开源功能标志与A/B测试","Open source feature flags & A/B testing"],
+["ConfigCat","https://configcat.com","开发者优先功能标志，10个标志","Developer-first feature flags, 10 flags"],
+["Flagsmith","https://flagsmith.com","跨平台功能标志管理","Cross-platform feature flag management"]
+]],
+["fonts","字体","Fonts",[
+["Google Fonts","https://fonts.google.com","1000+免费字体","1k+ free fonts"],
+["Font Squirrel","https://www.fontsquirrel.com","免费商用字体","Free commercial fonts"],
+["DaFont","https://www.dafont.com","大量免费字体","Massive free font collection"]
+]],
+["forms","表单","Forms",[
+["Formspree","https://formspree.io","HTML表单端点，50次/月","HTML form endpoint, 50 submissions/mo"],
+["Tally","https://tally.so","99%功能免费，无限表单","99% features free, unlimited forms"],
+["Typeform","https://www.typeform.com","精美表单，100回复/月","Beautiful forms, 100 responses/mo"]
+]],
+["genai","生成式AI","Generative AI",[
+["Hugging Face","https://huggingface.co","AI模型托管与推理","AI model hosting & inference"],
+["Google Colab","https://colab.research.google.com","免费Jupyter笔记本+GPU","Free Jupyter notebooks + GPU"],
+["Kaggle","https://www.kaggle.com","数据科学平台，GPU/TPU","Data science platform, GPU/TPU"],
+["OpenRouter","https://openrouter.ai","统一访问多种免费AI模型","Unified access to various free AI models"]
+]],
+["iaas","IaaS","IaaS",[
+["Oracle Cloud","https://www.oracle.com/cloud/free","永久免费层，2台VM","Always Free tier, 2 VMs"],
+["Backblaze B2","https://www.backblaze.com/b2","10GB免费对象存储","10GB free object storage"]
+]],
+["ide","IDE与编辑","IDE & Code Editing",[
+["VS Code","https://code.visualstudio.com","微软开源代码编辑器","Microsoft open-source code editor"],
+["Replit","https://replit.com","在线IDE与应用托管","Online IDE & app hosting"],
+["CodeSandbox","https://codesandbox.io","在线Web开发IDE","Online web dev IDE"],
+["StackBlitz","https://stackblitz.com","基于VS Code的在线IDE","VS Code based online IDE"],
+["GitHub Codespaces","https://github.com/features/codespaces","云端开发环境","Cloud dev environments"]
+]],
+["phone","号码验证","Phone Verification",[
+["Numverify","https://numverify.com","全局电话号码验证，100次/月","Global phone validation, 100 req/mo"],
+["Veriphone","https://veriphone.io","快速电话验证，1000次/月","Fast phone validation, 1k req/mo"]
+]],
+["pm","项目管理","Project Management",[
+["Jira","https://www.atlassian.com/software/jira","敏捷项目管理，10用户免费","Agile project management, 10 users free"],
+["Trello","https://trello.com","基于看板的协作，无限个人板","Kanban-based collaboration, unlimited personal boards"],
+["Asana","https://asana.com","团队工作管理，15用户免费","Team work management, 15 users free"],
+["ClickUp","https://clickup.com","一体化生产力平台","All-in-one productivity platform"],
+["Linear","https://linear.app","简化的问题追踪","Streamlined issue tracking"]
+]],
+["log","日志管理","Log Management",[
+["Loggly","https://www.loggly.com","日志管理，200MB/天","Log management, 200MB/day"],
+["Papertrail","https://papertrailapp.com","日志管理，50MB/天，7天保留","Log management, 50MB/day, 7-day retention"],
+["Logz.io","https://logz.io","ELK栈日志，1GB/天","ELK stack logs, 1GB/day"],
+["Better Stack","https://betterstack.com","日志与监控，1GB/月","Logs & monitoring, 1GB/mo"]
+]],
+["mobile","移动分发","Mobile Distribution",[
+["Diawi","https://www.diawi.com","iOS/Android应用部署","iOS/Android app deployment"],
+["Appho.st","https://appho.st","移动应用托管，5个应用","Mobile app hosting, 5 apps"]
+]],
+["mgmt","服务器管理","Server Management",[
+["Ploi","https://ploi.io","服务器管理工具，1个服务器免费","Server management tool, 1 server free"],
+["RunCloud","https://www.runcloud.io","PHP项目服务器管理","PHP project server management"]
+]],
+["msg","消息传递","Messaging & Streaming",[
+["Ably","https://ably.com","实时消息，300万条/月","Realtime messaging, 3M msgs/mo"],
+["Pusher","https://pusher.com","实时消息，20万条/天","Realtime messaging, 200k msgs/day"],
+["PubNub","https://www.pubnub.com","实时消息，100万笔/月","Realtime messaging, 1M txns/mo"],
+["Novu","https://novu.co","开源通知基础设施，3万条/月","Open source notification infra, 30k msgs/mo"]
+]],
+["misc","其他","Miscellaneous",[
+["Cron-job.org","https://cron-job.org","免费在线Cron作业","Free online cron jobs"],
+["ReqBin","https://reqbin.com","在线HTTP请求测试","Online HTTP request testing"]
+]],
+["monitor","监测","Monitoring",[
+["UptimeRobot","https://uptimerobot.com","50个监控，5分钟间隔","50 monitors, 5-min interval"],
+["Datadog","https://www.datadoghq.com","最多5个主机免费","Up to 5 hosts free"],
+["New Relic","https://newrelic.com","100GB/月数据免费","100GB/mo data free"],
+["Better Stack","https://betterstack.com","10个监控，3分钟间隔","10 monitors, 3-min interval"],
+["Grafana Cloud","https://grafana.com/products/cloud/","可观测性平台，免费层","Observability platform, free tier"]
+]],
+["paas","PaaS","PaaS",[
+["Vercel","https://vercel.com","前端部署，自动HTTPS","Frontend deploy, auto HTTPS"],
+["Netlify","https://www.netlify.com","静态托管，100GB带宽","Static hosting, 100GB bandwidth"],
+["Render","https://render.com","Web应用与数据库部署","Web app & DB deployment"],
+["Railway","https://railway.app","每月$5免费额度","$5/mo free credit"],
+["Fly.io","https://fly.io","全球边缘部署，3个VM","Global edge deploy, 3 VMs"],
+["Heroku","https://www.heroku.com","应用部署，550小时/月","App deployment, 550 hrs/mo"],
+["Glitch","https://glitch.com","Node.js应用托管","Node.js app hosting"],
+["PythonAnywhere","https://www.pythonanywhere.com","Python应用托管","Python app hosting"]
+]],
+["pkg","包构建","Package Build",[
+["OpenSUSE Build","https://build.opensuse.org","多发行版包构建","Multi-distro package building"],
+["Copr","https://copr.fedorainfracloud.org","Fedora RPM构建","Fedora RPM building"]
+]],
+["payment","支付计费","Payment & Billing",[
+["Stripe","https://stripe.com","支付处理，按量付费","Payment processing, pay-as-you-go"],
+["RevenueCat","https://www.revenuecat.com","应用内购买后端，2.5万美元/月","In-app purchase backend, $25k/mo"],
+["CurrencyAPI","https://currencyapi.com","汇率API，300次/月","Exchange rates API, 300 req/mo"]
+]],
+["privacy","隐私管理","Privacy Management",[
+["Iubenda","https://www.iubenda.com","隐私与Cookie政策","Privacy & Cookie policies"],
+["Cookiefirst","https://cookiefirst.com","Cookie横幅与同意管理","Cookie banners & consent management"]
+]],
+["screenshot","截图API","Screenshot APIs",[
+["ApiFlash","https://apiflash.com","基于Chrome的截图API","Chrome-based screenshot API"],
+["Microlink","https://microlink.io","网站转数据/截图，50次/天","Site to data/screenshots, 50/day"],
+["ScreenshotMachine","https://www.screenshotmachine.com","100张快照/月","100 snapshots/mo"]
+]],
+["flutter","Flutter/iOS","Flutter & iOS",[
+["Codemagic","https://codemagic.io","移动CI/CD，500分钟/月","Mobile CI/CD, 500 mins/mo"],
+["FlutLab","https://flutlab.io","在线Flutter IDE","Online Flutter IDE"],
+["FlutterFlow","https://flutterflow.io","拖拽构建Flutter应用","Drag & drop Flutter app builder"]
+]],
+["search","搜索","Search",[
+["Algolia","https://www.algolia.com","托管搜索，100万文档","Hosted search, 1M documents"],
+["Bonsai","https://bonsai.io","Elasticsearch托管，1GB","Elasticsearch hosting, 1GB"]
+]],
+["security","安全与PKI","Security & PKI",[
+["Let's Encrypt","https://letsencrypt.org","免费SSL证书","Free SSL certificates"],
+["Snyk","https://snyk.io","代码安全扫描，开源免费","Code security scanning, free for open source"],
+["Dependabot","https://github.com/dependabot","依赖更新与安全提醒","Dependency updates & security alerts"],
+["Auth0","https://auth0.com","认证服务，7000活跃用户","Auth service, 7k active users"],
+["Clerk","https://clerk.com","认证服务，5000 MAU","Auth service, 5k MAU"],
+["GitGuardian","https://www.gitguardian.com","代码秘密检测，25人以下免费","Secret detection, free for <25 users"]
+]],
+["auth","认证授权","Auth & User Mgmt",[
+["Clerk","https://clerk.com","用户管理与认证，5万MRU","User management & auth, 50k MRU"],
+["Auth0","https://auth0.com","身份验证，2.5万MAU","Identity platform, 25k MAU"],
+["Supabase Auth","https://supabase.com/docs/guides/auth","免费5万MAU","Free 50k MAU"],
+["Logto","https://logto.io","开源AuthN/AuthZ，5000 MAU","Open source AuthN/AuthZ, 5k MAU"],
+["WorkOS","https://workos.com","企业级Auth，100万MAU","Enterprise auth, 1M MAU"]
+]],
+["repo","源代码仓库","Source Code Repos",[
+["GitHub","https://github.com","无限公共/私有仓库","Unlimited public/private repos"],
+["GitLab","https://about.gitlab.com","无限仓库，400分钟CI","Unlimited repos, 400 CI mins"],
+["Bitbucket","https://bitbucket.org","5用户，50分钟CI","5 users, 50 CI mins"],
+["Codeberg","https://codeberg.org","免费开源项目无限仓库","Unlimited repos for FOSS"],
+["Gitea","https://gitea.io","轻量级自托管Git","Lightweight self-hosted Git"]
+]],
+["storage","存储与媒体","Storage & Media",[
+["Cloudinary","https://cloudinary.com","图片/视频处理，25GB存储","Image/video processing, 25GB storage"],
+["ImgBB","https://imgbb.com","免费图片托管，无限制","Free image hosting, unlimited"],
+["Uploadthing","https://uploadthing.com","文件上传，2GB存储","File uploads, 2GB storage"],
+["Backblaze B2","https://www.backblaze.com/b2","10GB对象存储，S3兼容","10GB object storage, S3 compatible"],
+["Pinata","https://pinata.cloud","IPFS托管，1GB免费","IPFS hosting, 1GB free"]
+]],
+["tunnel","隧道与WebRTC","Tunnels & WebRTC",[
+["Ngrok","https://ngrok.com","本地服务器暴露到公网","Expose local server to public"],
+["LocalTunnel","https://localtunnel.me","开源本地隧道","Open-source local tunnel"],
+["Tailscale","https://tailscale.com","零配置VPN，100设备","Zero-config VPN, 100 devices"],
+["ZeroTier","https://www.zerotier.com","虚拟以太网，25客户端","Virtual Ethernet, 25 clients"]
+]],
+["test","测试","Testing",[
+["Cypress","https://www.cypress.io","浏览器测试，开源免费","Browser testing, open-source free"],
+["Percy","https://percy.io","视觉测试，5000快照/月","Visual testing, 5k snapshots/mo"],
+["Checkly","https://www.checklyhq.com","合成监控与API测试","Synthetic monitoring & API testing"],
+["BrowserStack","https://www.browserstack.com","开源项目免费","Free for open source"]
+]],
+["team","团队协作","Team & Collaboration",[
+["Slack","https://slack.com","团队聊天，90天历史","Team chat, 90-day history"],
+["Discord","https://discord.com","语音/文本聊天，无限用户","Voice/text chat, unlimited users"],
+["Notion","https://www.notion.so","笔记与协作，个人免费","Notes & collaboration, free for individuals"],
+["Miro","https://miro.com","协作白板，3个画板","Collaborative whiteboard, 3 boards"],
+["Figma","https://www.figma.com","设计协作，3个项目","Design collaboration, 3 projects"]
+]],
+["i18n","翻译管理","Translation Management",[
+["Crowdin","https://crowdin.com","开源项目免费","Free for open source"],
+["Transifex","https://www.transifex.com","开源项目免费","Free for open source"],
+["Localazy","https://localazy.com","1000源字符串，无限语言","1k source strings, unlimited languages"],
+["Tolgee","https://tolgee.io","开源翻译平台","Open-source translation platform"]
+]],
+["visitor","访客录音","Visitor Recording",[
+["Microsoft Clarity","https://clarity.microsoft.com","完全免费会话录制","Completely free session recording"],
+["FullStory","https://www.fullstory.com","1000次会话/月","1k sessions/mo"],
+["LogRocket","https://logrocket.com","1000次会话/月","1k sessions/mo"],
+["OpenReplay","https://openreplay.com","开源会话回放，1000次/月","Open-source session replay, 1k/mo"]
+]],
+["hosting","网页托管","Web Hosting",[
+["GitHub Pages","https://pages.github.com","静态网站托管","Static site hosting"],
+["Cloudflare Pages","https://pages.cloudflare.com","无限请求带宽","Unlimited requests & bandwidth"],
+["Vercel","https://vercel.com","前端与Serverless","Frontend & Serverless"],
+["Netlify","https://www.netlify.com","静态站点与表单","Static sites & forms"],
+["Surge","https://surge.sh","前端静态发布","Frontend static publishing"],
+["Neocities","https://neocities.org","1GB存储，200GB带宽","1GB storage, 200GB bandwidth"]
+]],
+["comment","评论平台","Comment Platforms",[
+["Utterances","https://utteranc.es","基于GitHub Issues的评论","Comments based on GitHub Issues"],
+["GraphComment","https://graphcomment.com","社区评论平台","Community comment platform"],
+["Disqus","https://disqus.com","基础免费套餐","Basic free tier"]
+]],
+["remote","远程桌面","Remote Desktop",[
+["RustDesk","https://rustdesk.com","开源远程桌面","Open-source remote desktop"],
+["AnyDesk","https://anydesk.com","3台设备免费","3 devices free"],
+["Parsec","https://parsec.app","低延迟远程桌面，个人免费","Low-latency remote desktop, free for personal"]
+]],
+["other","其他免费","Other Free",[
+["GitHub Education","https://education.github.com","学生免费资源包","Student developer pack"],
+["Microsoft 365 Dev","https://developer.microsoft.com/microsoft-365/dev-program","免费M365沙盒","Free M365 sandbox"],
+["RedHat Developers","https://developers.redhat.com","免费RHEL订阅","Free RHEL subscription"]
+]]
+];
+let $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+function render(){
+let toc='',main='',q=($('#search')||$('#searchM')).value.toLowerCase();
+D.forEach(c=>{
+let id=c[0],zh=c[1],en=c[2],items=c[3].filter(i=>!q||i[0].toLowerCase().includes(q)||i[2].toLowerCase().includes(q)||i[3].toLowerCase().includes(q));
+if(!items.length)return;
+toc+=`<li><a href="#${id}" class="block px-2 py-1 rounded hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition">${L=='zh'?zh:en}</a></li>`;
+main+=`<section id="${id}" class="mb-8"><h2 class="text-xl font-bold mb-4 pb-2 border-b flex items-center gap-2"><i class="fas fa-layer-group text-blue-500"></i>${L=='zh'?zh:en}</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+items.forEach(i=>{
+main+=`<a href="${i[1]}" target="_blank" class="item block p-3 bg-white rounded shadow-sm border border-gray-100 hover:border-blue-300 transition">
+<div class="font-semibold text-blue-600 flex justify-between"><span>${i[0]}</span><i class="fas fa-external-link-alt text-xs text-gray-400 mt-1"></i></div>
+<p class="text-sm text-gray-500 mt-1">${L=='zh'?i[2]:i[3]}</p></a>`;
+});
+main+=`</div></section>`;
+});
+$('#toc').innerHTML=toc;
+$('#main').innerHTML=main||`<p class="text-center text-gray-400 mt-10">${L=='zh'?'无结果':'No results'}</p>`;
+}
+function setLang(l){
+L=l;
+$('#btnZh').className=l=='zh'?'px-3 py-1 text-xs rounded border active-lang':'px-3 py-1 text-xs rounded border';
+$('#btnEn').className=l=='en'?'px-3 py-1 text-xs rounded border active-lang':'px-3 py-1 text-xs rounded border';
+render();
+}
+function toggleMenu(){$('#sidebar').classList.toggle('open')}
+$('#menuBtn').onclick=toggleMenu;
+$('#search').oninput=$('#searchM').oninput=render;
+$('#sidebar').addEventListener('click',e=>{if(e.target.tagName==='A'&&window.innerWidth<768)toggleMenu()});
+render();
+</script>
+</body>
+</html>
